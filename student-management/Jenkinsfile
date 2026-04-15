@@ -13,5 +13,11 @@ pipeline {
                 sh 'docker build -t yossra/student-management:latest .'
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl rollout restart deployment spring-deployment -n devops'
+            }
+        }
     }
 }
