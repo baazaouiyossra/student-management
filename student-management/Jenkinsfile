@@ -2,18 +2,18 @@ pipeline {
     agent any
 
     stages {
-
         stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean package'
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t baazaouiy/student-management:latest .'
+                dir('student-management') {
+                    sh 'docker build -t yossra/student-management:latest .'
+                }
             }
         }
-
     }
 }
