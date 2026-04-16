@@ -1,22 +1,59 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "yossra/student-management"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+
+        K8S_NAMESPACE   = "devops"
+        DEPLOYMENT_NAME = "spring-deployment"
+        CONTAINER_NAME  = "spring"
+    }
+
     stages {
-        stage('Build') {
+
+        stage('Checkout') {
             steps {
-                sh 'mvn clean package'
+                checkout scm
             }
         }
 
-        stage('Docker Build') {
+        stage('Build') {
             steps {
-                sh 'docker build -t yossra/student-management:latest .'
+                sh '''
+                    chmod +x mvnw
+                    ./mvnw clean package -DskipTests
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                '''
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl rollout restart deployment spring-deployment -n devops'
+                sh '''
+                    kubectl set image deployment/$DEPLOYMENT_NAME \
+                    $CONTAINER_NAME=$IMAGE_NAME:$IMAGE_TAG \
+                    -n $K8S_NAMESPACE
+
+                    kubectl rollout restart deployment/$DEPLOYMENT_NAME \
+                    -n $K8S_NAMESPACE
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    kubectl get pods -n $K8S_NAMESPACE
+                    kubectl get svc -n $K8S_NAMESPACE
+                '''
             }
         }
     }
